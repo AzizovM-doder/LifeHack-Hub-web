@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "A user of the LifeHack Hub app.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "description": "The user's profile photo URL." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user was created." },
+        "role": { "type": "string", "enum": ["admin", "user"], "description": "The user's role." }
+      },
+      "required": ["uid", "email", "createdAt", "role"]
+    },
+    "idea": {
+      "title": "Idea",
+      "description": "A tool idea submitted by a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who submitted the idea." },
+        "name": { "type": "string", "description": "The submitter's name." },
+        "email": { "type": "string", "format": "email", "description": "The submitter's email address." },
+        "idea": { "type": "string", "description": "The idea description." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the idea was submitted." }
+      },
+      "required": ["uid", "name", "email", "idea", "createdAt"]
+    },
+    "mood_log": {
+      "title": "Mood Log",
+      "description": "A daily mood entry.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who logged the mood." },
+        "mood": { "type": "string", "description": "The mood emoji or text." },
+        "note": { "type": "string", "description": "An optional note." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the mood was logged." }
+      },
+      "required": ["uid", "mood", "createdAt"]
+    },
+    "water_log": {
+      "title": "Water Log",
+      "description": "A daily water intake entry.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The ID of the user who logged the water." },
+        "amount": { "type": "number", "description": "The amount of water logged (e.g., in ml or cups)." },
+        "date": { "type": "string", "description": "The date of the log (YYYY-MM-DD)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the water was logged." }
+      },
+      "required": ["uid", "amount", "date", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/user" },
+      "description": "Stores user profiles."
+    },
+    "/ideas/{ideaId}": {
+      "schema": { "$ref": "#/entities/idea" },
+      "description": "Stores submitted tool ideas."
+    },
+    "/moods/{moodId}": {
+      "schema": { "$ref": "#/entities/mood_log" },
+      "description": "Stores user mood logs."
+    },
+    "/water/{waterId}": {
+      "schema": { "$ref": "#/entities/water_log" },
+      "description": "Stores user water logs."
+    }
+  }
+}

@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-primary: var(--color-primary-base);
+  --color-primary-light: var(--color-primary-light-base);
+  --color-secondary: var(--color-secondary-base);
+  --color-accent: var(--color-accent-base);
+  --color-accent-light: var(--color-accent-light-base);
+  --color-highlight: var(--color-highlight-base);
+  --color-highlight-light: var(--color-highlight-light-base);
+  
+  --color-bg: var(--color-bg-base);
+  --color-bg-card: var(--color-bg-card-base);
+  --color-text: var(--color-text-base);
+  --color-text-muted: var(--color-text-muted-base);
+  --color-border: var(--color-border-base);
+}
+
+@layer base {
+  :root {
+    /* Default Theme (Coral/Yellow/Mint/Purple) */
+    --color-primary-base: #FF6B6B;
+    --color-primary-light-base: #FF8E8E;
+    --color-secondary-base: #FFD93D;
+    --color-accent-base: #6BCB77;
+    --color-accent-light-base: #8DE097;
+    --color-highlight-base: #9D4EDD;
+    --color-highlight-light-base: #B872FF;
+    
+    --color-bg-base: #FFFDF7;
+    --color-bg-card-base: #FFFFFF;
+    --color-text-base: #1F2937;
+    --color-text-muted-base: #6B7280;
+    --color-border-base: #E5E7EB;
+  }
+
+  .dark {
+    --color-bg-base: #111827;
+    --color-bg-card-base: #1F2937;
+    --color-text-base: #F9FAFB;
+    --color-text-muted-base: #9CA3AF;
+    --color-border-base: #374151;
+  }
+
+  /* Theme: Ocean */
+  .theme-ocean {
+    --color-primary-base: #3B82F6;
+    --color-primary-light-base: #60A5FA;
+    --color-secondary-base: #14B8A6;
+    --color-accent-base: #06B6D4;
+    --color-accent-light-base: #22D3EE;
+    --color-highlight-base: #6366F1;
+    --color-highlight-light-base: #818CF8;
+  }
+
+  /* Theme: Sunset */
+  .theme-sunset {
+    --color-primary-base: #F97316;
+    --color-primary-light-base: #FB923C;
+    --color-secondary-base: #EF4444;
+    --color-accent-base: #EC4899;
+    --color-accent-light-base: #F472B6;
+    --color-highlight-base: #8B5CF6;
+    --color-highlight-light-base: #A78BFA;
+  }
+
+  /* Theme: Forest */
+  .theme-forest {
+    --color-primary-base: #10B981;
+    --color-primary-light-base: #34D399;
+    --color-secondary-base: #84CC16;
+    --color-accent-base: #22C55E;
+    --color-accent-light-base: #4ADE80;
+    --color-highlight-base: #059669;
+    --color-highlight-light-base: #10B981;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Hide scrollbar for clean look in some places */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Flip Card CSS */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+

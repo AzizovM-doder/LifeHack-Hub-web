@@ -1,0 +1,190 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required, immutable) - The user's unique ID
+    //   - email: string (required, immutable) - The user's email address
+    //   - displayName: string (optional) - The user's display name
+    //   - photoURL: string (optional) - The user's profile photo URL
+    //   - createdAt: timestamp (required, immutable) - When the user was created
+    //   - role: string (required) - The user's role ('admin' or 'user')
+    //
+    // Collection: ideas
+    // Document ID: {ideaId}
+    // Fields:
+    //   - uid: string (required, immutable) - The ID of the user who submitted the idea
+    //   - name: string (required, immutable) - The submitter's name
+    //   - email: string (required, immutable) - The submitter's email address
+    //   - idea: string (required, immutable) - The idea description
+    //   - createdAt: timestamp (required, immutable) - When the idea was submitted
+    //
+    // Collection: moods
+    // Document ID: {moodId}
+    // Fields:
+    //   - uid: string (required, immutable) - The ID of the user who logged the mood
+    //   - mood: string (required) - The mood emoji or text
+    //   - note: string (optional) - An optional note
+    //   - createdAt: timestamp (required, immutable) - When the mood was logged
+    //
+    // Collection: water
+    // Document ID: {waterId}
+    // Fields:
+    //   - uid: string (required, immutable) - The ID of the user who logged the water
+    //   - amount: number (required) - The amount of water logged
+    //   - date: string (required) - The date of the log (YYYY-MM-DD)
+    //   - createdAt: timestamp (required, immutable) - When the water was logged
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function uidUnchanged() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
+    }
+
+    function uidNotModified() {
+      return !('uid' in request.resource.data) || request.resource.data.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "aievrasul8@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'createdAt', 'role']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             isValidOptionalString('displayName', 0, 100) &&
+             isValidOptionalString('photoURL', 0, 2048) &&
+             data.createdAt is timestamp &&
+             data.role in ['admin', 'user'];
+    }
+
+    function isValidIdea(data) {
+      return hasOnlyAllowedFields(['uid', 'name', 'email', 'idea', 'createdAt']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 100 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.idea is string && data.idea.size() > 0 && data.idea.size() < 5000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidMood(data) {
+      return hasOnlyAllowedFields(['uid', 'mood', 'note', 'createdAt']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 100 &&
+             data.mood is string && data.mood.size() > 0 && data.mood.size() < 50 &&
+             isValidOptionalString('note', 0, 1000) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidWater(data) {
+      return hasOnlyAllowedFields(['uid', 'amount', 'date', 'createdAt']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 100 &&
+             data.amount is number && data.amount >= 0 && data.amount < 10000 &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() &&
+                       isOwner(userId) &&
+                       isValidUser(request.resource.data) &&
+                       uidUnchanged() &&
+                       ((request.resource.data.role == 'user') || isAdmin());
+      allow update: if isAuthenticated() &&
+                       isOwner(userId) &&
+                       isValidUser(request.resource.data) &&
+                       uidNotModified() &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       request.resource.data.email == resource.data.email &&
+                       ((request.resource.data.role == resource.data.role) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /ideas/{ideaId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() &&
+                       isValidIdea(request.resource.data) &&
+                       uidUnchanged();
+      allow update: if false; // Ideas are immutable
+      allow delete: if isAdmin();
+    }
+
+    match /moods/{moodId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() &&
+                       isValidMood(request.resource.data) &&
+                       uidUnchanged();
+      allow update: if isAuthenticated() &&
+                       isDocOwner() &&
+                       isValidMood(request.resource.data) &&
+                       uidNotModified() &&
+                       request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /water/{waterId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() &&
+                       isValidWater(request.resource.data) &&
+                       uidUnchanged();
+      allow update: if isAuthenticated() &&
+                       isDocOwner() &&
+                       isValidWater(request.resource.data) &&
+                       uidNotModified() &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       request.resource.data.date == resource.data.date;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}
