@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
 import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
@@ -17,13 +15,23 @@ export default function Chatbot() {
 
   useEffect(() => {
     if (isOpen && !chatRef.current) {
-      chatRef.current = ai.chats.create({
-        model: 'gemini-3.1-pro-preview',
-        config: {
-          systemInstruction: "You are a fun, helpful, and playful assistant for LifeHack Hub. You use emojis and keep a lighthearted tone.",
-          thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }
-        }
-      });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        setMessages(prev => [...prev, { role: 'model', text: 'Oops! The Gemini API key is missing. Please add it in the settings to chat with me. 🔑' }]);
+        return;
+      }
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        chatRef.current = ai.chats.create({
+          model: 'gemini-3.1-pro-preview',
+          config: {
+            systemInstruction: "You are a fun, helpful, and playful assistant for LifeHack Hub. You use emojis and keep a lighthearted tone.",
+            thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }
+          }
+        });
+      } catch (e) {
+        console.error("Failed to initialize AI:", e);
+      }
     }
   }, [isOpen]);
 
@@ -32,13 +40,18 @@ export default function Chatbot() {
   }, [messages, isTyping]);
 
   const handleSend = async () => {
-    if (!input.trim() || !chatRef.current) return;
+    if (!input.trim()) return;
 
     const userMsg = input.trim();
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setInput('');
-    setIsTyping(true);
 
+    if (!chatRef.current) {
+      setMessages(prev => [...prev, { role: 'model', text: 'I cannot chat right now because the API key is missing or invalid. 😢' }]);
+      return;
+    }
+
+    setIsTyping(true);
     try {
       const response = await chatRef.current.sendMessage({ message: userMsg });
       setMessages(prev => [...prev, { role: 'model', text: response.text || 'Oops, I got confused! 😅' }]);
